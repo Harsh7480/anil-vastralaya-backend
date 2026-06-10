@@ -8,8 +8,14 @@ const getAll = async (filters = {}) => {
   if (filters.category) {
     where.category = { slug: filters.category };
   }
+  if (filters.categoryId) {
+    where.categoryId = filters.categoryId;
+  }
   if (filters.tag) {
     where.tag = filters.tag;
+  }
+  if (filters.subcategory) {
+    where.subcategory = filters.subcategory;
   }
   if (filters.search) {
     where.OR = [

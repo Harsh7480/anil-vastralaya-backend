@@ -35,4 +35,12 @@ const getMe = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getMe };
+const logout = async (req, res) => {
+  try {
+    res.json({ message: 'Logged out successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+module.exports = { register, login, getMe, logout };

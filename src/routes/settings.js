@@ -4,6 +4,7 @@ const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
 
+router.get('/public', getAll);
 router.get('/', authenticate, getAll);
 router.get('/:key', authenticate, getByKey);
 router.put('/:key', authenticate, update);
