@@ -31,9 +31,20 @@ const getAll = async (filters = {}) => {
   if (filters.inStock !== undefined) {
     where.inStock = filters.inStock === 'true';
   }
+  if (filters.featured !== undefined) {
+    where.featured = filters.featured === 'true';
+  }
 
   return prisma.product.findMany({
     where,
+    include: { category: true },
+    orderBy: { createdAt: 'desc' },
+  });
+};
+
+const getFeatured = async () => {
+  return prisma.product.findMany({
+    where: { featured: true, inStock: true },
     include: { category: true },
     orderBy: { createdAt: 'desc' },
   });
@@ -72,10 +83,11 @@ const remove = async (id) => {
 };
 
 const getStats = async () => {
-  const [total, active, lowStock, totalValue] = await Promise.all([
+  const [total, active, lowStock, featured, totalValue] = await Promise.all([
     prisma.product.count(),
     prisma.product.count({ where: { inStock: true } }),
     prisma.product.count({ where: { inStock: false } }),
+    prisma.product.count({ where: { featured: true } }),
     prisma.product.aggregate({ _sum: { price: true } }),
   ]);
 
@@ -83,9 +95,10 @@ const getStats = async () => {
     total,
     active,
     lowStock,
+    featured,
     inactive: total - active,
     totalValue: totalValue._sum.price || 0,
   };
 };
 
-module.exports = { getAll, getBySlug, getById, create, update, remove, getStats };
+module.exports = { getAll, getFeatured, getBySlug, getById, create, update, remove, getStats };
