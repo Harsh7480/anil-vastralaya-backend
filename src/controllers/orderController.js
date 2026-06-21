@@ -33,7 +33,8 @@ const create = async (req, res) => {
     if (!customerName || !email || !phone || !address || !city || !pincode || !items?.length) {
       return res.status(400).json({ error: 'Please fill in all required fields' });
     }
-    const order = await orderService.create({ customerName, email, phone, address, city, pincode, items });
+    const userId = req.user?.id || null;
+    const order = await orderService.create({ customerName, email, phone, address, city, pincode, items, userId });
     res.status(201).json(order);
   } catch (error) {
     res.status(500).json({ error: error.message });

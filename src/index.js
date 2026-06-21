@@ -10,6 +10,7 @@ const orderRoutes = require('./routes/orders');
 const testimonialRoutes = require('./routes/testimonials');
 const galleryRoutes = require('./routes/gallery');
 const settingsRoutes = require('./routes/settings');
+const userRoutes = require('./routes/users');
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/testimonials', testimonialRoutes);
 app.use('/api/gallery', galleryRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/users', userRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Anil Vastralaya API is running' });

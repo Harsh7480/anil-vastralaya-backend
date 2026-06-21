@@ -36,7 +36,7 @@ const getById = async (id) => {
 };
 
 const create = async (data) => {
-  const { customerName, email, phone, address, city, pincode, items } = data;
+  const { customerName, email, phone, address, city, pincode, items, userId } = data;
 
   let totalAmount = 0;
   const orderItems = [];
@@ -45,7 +45,7 @@ const create = async (data) => {
     const product = await prisma.product.findUnique({ where: { id: item.productId } });
     if (!product) throw new Error(`Product not found: ${item.productId}`);
     totalAmount += product.price * item.quantity;
-    orderItems.push({ quantity: item.quantity, price: product.price, productId: item.productId });
+    orderItems.push({ quantity: item.quantity, price: product.price, size: item.size || null, productId: item.productId });
   }
 
   return prisma.order.create({
@@ -58,6 +58,7 @@ const create = async (data) => {
       pincode,
       totalAmount,
       bookingType: 'full',
+      userId: userId || null,
       items: { create: orderItems },
     },
     include: { items: true },
@@ -74,7 +75,7 @@ const createBooking = async (data) => {
     const product = await prisma.product.findUnique({ where: { id: item.productId } });
     if (!product) throw new Error(`Product not found: ${item.productId}`);
     totalAmount += product.price * item.quantity;
-    orderItems.push({ quantity: item.quantity, price: product.price, productId: item.productId });
+    orderItems.push({ quantity: item.quantity, price: product.price, size: item.size || null, productId: item.productId });
   }
 
   const advanceAmount = Math.ceil((totalAmount * advancePercentage) / 100);

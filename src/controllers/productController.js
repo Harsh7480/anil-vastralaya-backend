@@ -29,11 +29,11 @@ const getBySlug = async (req, res) => {
 
 const create = async (req, res) => {
   try {
-    const { name, slug, description, price, originalPrice, image, images, tag, subcategory, categoryId, featured } = req.body;
+    const { name, slug, description, price, originalPrice, image, images, tag, subcategory, sizes, categoryId, featured } = req.body;
     if (!name || !slug || !price || !image || !categoryId) {
       return res.status(400).json({ error: 'Name, slug, price, image and categoryId are required' });
     }
-    const product = await productService.create({ name, slug, description, price, originalPrice, image, images, tag, subcategory, categoryId, featured: featured || false });
+    const product = await productService.create({ name, slug, description, price, originalPrice, image, images, tag, subcategory, sizes, categoryId, featured: featured || false });
     res.status(201).json(product);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -42,8 +42,8 @@ const create = async (req, res) => {
 
 const update = async (req, res) => {
   try {
-    const { name, slug, description, price, originalPrice, image, images, tag, subcategory, inStock, categoryId, featured } = req.body;
-    const product = await productService.update(req.params.id, { name, slug, description, price, originalPrice, image, images, tag, subcategory, inStock, categoryId, featured });
+    const { name, slug, description, price, originalPrice, image, images, tag, subcategory, sizes, inStock, categoryId, featured } = req.body;
+    const product = await productService.update(req.params.id, { name, slug, description, price, originalPrice, image, images, tag, subcategory, sizes, inStock, categoryId, featured });
     res.json(product);
   } catch (error) {
     res.status(500).json({ error: error.message });
