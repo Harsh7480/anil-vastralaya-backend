@@ -43,4 +43,17 @@ const bulkUpdate = async (req, res) => {
   }
 };
 
-module.exports = { getAll, getByKey, update, bulkUpdate };
+const uploadQrCode = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+    const filePath = '/uploads/qrcode/' + req.file.filename;
+    await settingsService.update('upiQrCode', filePath);
+    res.json({ filePath, filename: req.file.filename });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+module.exports = { getAll, getByKey, update, bulkUpdate, uploadQrCode };

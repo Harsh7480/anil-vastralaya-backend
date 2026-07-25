@@ -122,6 +122,10 @@ async function main() {
     security: JSON.stringify({ twoFactorAuth: false, sessionTimeout: 30, maxLoginAttempts: 5, strongPassword: true }),
     seo: JSON.stringify({ metaTitle: 'Anil Vastralaya - Premium Traditional Wear', metaDescription: 'Shop premium sarees, lehengas, kurtas and traditional Indian wear at Anil Vastralaya.', keywords: 'sarees, lehengas, kurtas, traditional wear, Indian clothing' }),
     discounts: JSON.stringify({ coupons: [], firstOrderDiscount: 10, referralDiscount: 5 }),
+    advancePercentage: '20',
+    upiQrCode: '',
+    upiId: '',
+    bookingTerms: 'Advance payment is non-refundable. Product must be collected within 7 days of confirmation. Remaining balance must be paid at the time of pickup.',
   };
 
   for (const [key, value] of Object.entries(defaultSettings)) {

@@ -66,7 +66,7 @@ const create = async (data) => {
 };
 
 const createBooking = async (data) => {
-  const { userId, customerName, email, phone, items, advancePercentage = 10 } = data;
+  const { userId, customerName, email, phone, items, advancePercentage = 20, paymentMethod = 'upi_qr', paymentScreenshot = null } = data;
 
   let totalAmount = 0;
   const orderItems = [];
@@ -82,6 +82,8 @@ const createBooking = async (data) => {
   const remainingAmount = totalAmount - advanceAmount;
   const bookingCode = generateBookingCode();
 
+  const initialStatus = paymentMethod === 'in_shop' ? 'confirmed' : 'pending_verification';
+
   return prisma.order.create({
     data: {
       customerName,
@@ -91,12 +93,14 @@ const createBooking = async (data) => {
       city: 'N/A',
       pincode: '000000',
       totalAmount,
-      status: 'booked',
+      status: initialStatus,
       bookingType: 'advance',
       advancePercentage,
       advanceAmount,
       remainingAmount,
       bookingCode,
+      paymentMethod,
+      paymentScreenshot,
       userId: userId || null,
       items: { create: orderItems },
     },
@@ -109,6 +113,30 @@ const updateStatus = async (id, status) => {
   return prisma.order.update({
     where: { id },
     data: { status },
+  });
+};
+
+const verifyPayment = async (id, adminNote = '') => {
+  const order = await getById(id);
+  if (!order) throw new Error('Order not found');
+  return prisma.order.update({
+    where: { id },
+    data: {
+      paymentVerified: true,
+      status: 'confirmed',
+      adminNote,
+    },
+  });
+};
+
+const updateBookingStatus = async (id, status, adminNote = '') => {
+  await getById(id);
+  return prisma.order.update({
+    where: { id },
+    data: {
+      status,
+      adminNote: adminNote || undefined,
+    },
   });
 };
 
@@ -132,4 +160,4 @@ const getStats = async () => {
   };
 };
 
-module.exports = { getAll, getById, create, createBooking, getByUserId, updateStatus, getStats };
+module.exports = { getAll, getById, create, createBooking, getByUserId, updateStatus, verifyPayment, updateBookingStatus, getStats };

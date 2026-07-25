@@ -78,6 +78,10 @@ model Order {
   advanceAmount     Float?
   remainingAmount   Float?
   bookingCode       String?  @unique
+  paymentScreenshot String?
+  paymentMethod     String?  @default("upi_qr")
+  paymentVerified   Boolean  @default(false)
+  adminNote         String?
   userId            String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt

@@ -1,4 +1,5 @@
 const orderService = require('../services/orderService');
+const settingsService = require('../services/settingsService');
 
 const getAll = async (req, res) => {
   try {
@@ -43,15 +44,21 @@ const create = async (req, res) => {
 
 const createBooking = async (req, res) => {
   try {
-    const { customerName, email, phone, items, advancePercentage } = req.body;
+    const { customerName, email, phone, items, advancePercentage, paymentMethod, paymentScreenshot } = req.body;
     const userId = req.user?.id;
 
     if (!customerName || !email || !phone || !items?.length) {
       return res.status(400).json({ error: 'Please fill in all required fields' });
     }
 
-    const validPercentages = [10, 15, 20, 25, 30, 50, 100];
-    const percentage = validPercentages.includes(advancePercentage) ? advancePercentage : 10;
+    let percentage = advancePercentage;
+    if (!percentage) {
+      const globalAdvance = await settingsService.getByKey('advancePercentage');
+      percentage = parseInt(globalAdvance) || 20;
+    }
+
+    const validPercentages = [5, 10, 15, 20, 25, 30, 50, 100];
+    percentage = validPercentages.includes(percentage) ? percentage : 20;
 
     const order = await orderService.createBooking({
       userId,
@@ -60,6 +67,8 @@ const createBooking = async (req, res) => {
       phone,
       items,
       advancePercentage: percentage,
+      paymentMethod: paymentMethod || 'upi_qr',
+      paymentScreenshot: paymentScreenshot || null,
     });
 
     res.status(201).json(order);
@@ -81,6 +90,41 @@ const updateStatus = async (req, res) => {
   }
 };
 
+const verifyPayment = async (req, res) => {
+  try {
+    const { adminNote } = req.body || {};
+    const order = await orderService.verifyPayment(req.params.id, adminNote);
+    res.json(order);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const updateBookingStatus = async (req, res) => {
+  try {
+    const { status, adminNote } = req.body;
+    if (!status) {
+      return res.status(400).json({ error: 'Status is required' });
+    }
+    const order = await orderService.updateBookingStatus(req.params.id, status, adminNote);
+    res.json(order);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const uploadScreenshot = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+    const filePath = '/uploads/payments/' + req.file.filename;
+    res.json({ filePath, filename: req.file.filename });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 const getStats = async (req, res) => {
   try {
     const stats = await orderService.getStats();
@@ -90,4 +134,4 @@ const getStats = async (req, res) => {
   }
 };
 
-module.exports = { getAll, getById, create, createBooking, getByUserId, updateStatus, getStats };
+module.exports = { getAll, getById, create, createBooking, getByUserId, updateStatus, verifyPayment, updateBookingStatus, uploadScreenshot, getStats };
