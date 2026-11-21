@@ -1,4 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
+const settingsService = require('./settingsService');
+const deliveryService = require('./deliveryService');
 
 const prisma = new PrismaClient();
 
@@ -36,16 +38,72 @@ const getById = async (id) => {
 };
 
 const create = async (data) => {
-  const { customerName, email, phone, address, city, pincode, items, userId } = data;
+  const {
+    customerName,
+    email,
+    phone,
+    address,
+    city,
+    pincode,
+    items,
+    userId,
+    latitude,
+    longitude,
+    paymentMethod = 'cod',
+    orderType = 'full',
+    deliveryDate,
+    advancePercentage,
+    paymentScreenshot = null,
+  } = data;
 
-  let totalAmount = 0;
+  let itemSubtotal = 0;
   const orderItems = [];
 
   for (const item of items) {
     const product = await prisma.product.findUnique({ where: { id: item.productId } });
     if (!product) throw new Error(`Product not found: ${item.productId}`);
-    totalAmount += product.price * item.quantity;
+    itemSubtotal += product.price * item.quantity;
     orderItems.push({ quantity: item.quantity, price: product.price, size: item.size || null, productId: item.productId });
+  }
+
+  const delivery = await deliveryService.calculate({ latitude, longitude, pincode, subtotal: itemSubtotal });
+  const totalAmount = itemSubtotal + delivery.deliveryCharge;
+  const isPrebook = orderType === 'prebook';
+
+  let status = 'pending';
+  let bookingType = 'full';
+  let finalAdvancePercentage = null;
+  let advanceAmount = null;
+  let remainingAmount = null;
+  let bookingCode = null;
+  let finalPaymentMethod = paymentMethod;
+  let parsedDeliveryDate = null;
+
+  if (isPrebook) {
+    if (!deliveryDate) {
+      throw Object.assign(new Error('Please choose a prebook delivery date'), { statusCode: 400 });
+    }
+    parsedDeliveryDate = new Date(deliveryDate);
+    if (Number.isNaN(parsedDeliveryDate.getTime())) {
+      throw Object.assign(new Error('Invalid prebook delivery date'), { statusCode: 400 });
+    }
+
+    const allowedPercentages = [5, 10, 15, 20, 25, 30, 50, 100];
+    const configured = Number(await settingsService.getByKey('advancePercentage'));
+    finalAdvancePercentage = allowedPercentages.includes(Number(advancePercentage))
+      ? Number(advancePercentage)
+      : allowedPercentages.includes(configured) ? configured : 20;
+    advanceAmount = Math.ceil((totalAmount * finalAdvancePercentage) / 100);
+    remainingAmount = totalAmount - advanceAmount;
+    bookingCode = generateBookingCode();
+    bookingType = 'advance';
+    status = finalPaymentMethod === 'in_shop' ? 'confirmed' : 'pending_verification';
+
+    if (!['upi_qr', 'in_shop'].includes(finalPaymentMethod)) {
+      throw Object.assign(new Error('Prebook requires UPI QR or pay at shop'), { statusCode: 400 });
+    }
+  } else if (!['cod', 'online'].includes(finalPaymentMethod)) {
+    throw Object.assign(new Error('Invalid payment method'), { statusCode: 400 });
   }
 
   return prisma.order.create({
@@ -56,8 +114,22 @@ const create = async (data) => {
       address,
       city,
       pincode,
+      itemSubtotal,
+      deliveryCharge: delivery.deliveryCharge,
+      deliveryMode: delivery.deliveryMode,
+      distanceKm: delivery.distanceKm,
+      latitude: latitude !== null && latitude !== undefined && latitude !== '' && Number.isFinite(Number(latitude)) ? Number(latitude) : null,
+      longitude: longitude !== null && longitude !== undefined && longitude !== '' && Number.isFinite(Number(longitude)) ? Number(longitude) : null,
+      deliveryDate: parsedDeliveryDate,
       totalAmount,
-      bookingType: 'full',
+      status,
+      bookingType,
+      advancePercentage: finalAdvancePercentage,
+      advanceAmount,
+      remainingAmount,
+      bookingCode,
+      paymentMethod: finalPaymentMethod,
+      paymentScreenshot: isPrebook ? paymentScreenshot : null,
       userId: userId || null,
       items: { create: orderItems },
     },

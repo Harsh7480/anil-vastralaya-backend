@@ -1,4 +1,5 @@
 const orderService = require('../services/orderService');
+const deliveryService = require('../services/deliveryService');
 const settingsService = require('../services/settingsService');
 
 const getAll = async (req, res) => {
@@ -30,15 +31,65 @@ const getById = async (req, res) => {
 
 const create = async (req, res) => {
   try {
-    const { customerName, email, phone, address, city, pincode, items } = req.body;
+    const {
+      customerName,
+      email,
+      phone,
+      address,
+      city,
+      pincode,
+      items,
+      latitude,
+      longitude,
+      paymentMethod = 'cod',
+      orderType = 'full',
+      deliveryDate,
+      advancePercentage,
+      paymentScreenshot,
+    } = req.body;
+
     if (!customerName || !email || !phone || !address || !city || !pincode || !items?.length) {
       return res.status(400).json({ error: 'Please fill in all required fields' });
     }
+    const hasLocation = latitude !== undefined && latitude !== null && latitude !== '' && longitude !== undefined && longitude !== null && longitude !== '';
+    if (!hasLocation && !pincode) {
+      return res.status(400).json({ error: 'Please share your location or enter a serviceable pincode' });
+    }
+
     const userId = req.user?.id || null;
-    const order = await orderService.create({ customerName, email, phone, address, city, pincode, items, userId });
+    const order = await orderService.create({
+      customerName,
+      email,
+      phone,
+      address,
+      city,
+      pincode,
+      items,
+      latitude,
+      longitude,
+      paymentMethod,
+      orderType,
+      deliveryDate,
+      advancePercentage,
+      paymentScreenshot: paymentScreenshot || null,
+      userId,
+    });
     res.status(201).json(order);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(error.statusCode || 500).json({ error: error.message });
+  }
+};
+
+const quoteDelivery = async (req, res) => {
+  try {
+    const quote = await deliveryService.calculate(req.body || {});
+    res.json(quote);
+  } catch (error) {
+    res.status(error.statusCode || 500).json({
+      error: error.message,
+      distanceKm: error.distanceKm,
+      radiusKm: error.radiusKm,
+    });
   }
 };
 
@@ -134,4 +185,4 @@ const getStats = async (req, res) => {
   }
 };
 
-module.exports = { getAll, getById, create, createBooking, getByUserId, updateStatus, verifyPayment, updateBookingStatus, uploadScreenshot, getStats };
+module.exports = { getAll, getById, create, quoteDelivery, createBooking, getByUserId, updateStatus, verifyPayment, updateBookingStatus, uploadScreenshot, getStats };

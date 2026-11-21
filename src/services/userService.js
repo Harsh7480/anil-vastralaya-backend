@@ -54,13 +54,31 @@ const remove = async (id) => {
 };
 
 const getStats = async () => {
-  const [total, admins, users] = await Promise.all([
+  const [total, admins, superadmins, users] = await Promise.all([
     prisma.user.count(),
     prisma.user.count({ where: { role: 'admin' } }),
+    prisma.user.count({ where: { role: 'superadmin' } }),
     prisma.user.count({ where: { role: 'user' } }),
   ]);
 
-  return { total, admins, users };
+  return { total, admins, superadmins, users };
 };
 
-module.exports = { getAll, getById, updateRole, remove, getStats };
+const ensureSuperadmin = async () => {
+  const existing = await prisma.user.findFirst({ where: { role: 'superadmin' } });
+  if (existing) return existing;
+
+  const candidate = await prisma.user.findFirst({
+    where: { role: 'admin' },
+    orderBy: { createdAt: 'asc' },
+  });
+
+  if (!candidate) return null;
+
+  return prisma.user.update({
+    where: { id: candidate.id },
+    data: { role: 'superadmin' },
+  });
+};
+
+module.exports = { getAll, getById, updateRole, remove, getStats, ensureSuperadmin };

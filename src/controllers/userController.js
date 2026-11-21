@@ -20,13 +20,20 @@ const getById = async (req, res) => {
 
 const updateRole = async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
+    const isSuperadmin = req.user.role === 'superadmin';
+    if (req.user.role !== 'admin' && !isSuperadmin) {
       return res.status(403).json({ error: 'Only admins can change user roles' });
     }
     const { role } = req.body;
-    if (!role || !['admin', 'user'].includes(role)) {
-      return res.status(400).json({ error: 'Role must be admin or user' });
+    if (!role || !['admin', 'user', 'superadmin'].includes(role)) {
+      return res.status(400).json({ error: 'Role must be superadmin, admin or user' });
     }
+
+    const target = await userService.getById(req.params.id);
+    if ((role === 'superadmin' || target.role === 'superadmin') && !isSuperadmin) {
+      return res.status(403).json({ error: 'Only a superadmin can manage the superadmin role' });
+    }
+
     const user = await userService.updateRole(req.params.id, role);
     res.json(user);
   } catch (error) {
@@ -37,7 +44,7 @@ const updateRole = async (req, res) => {
 const remove = async (req, res) => {
   try {
     const user = await userService.getById(req.params.id);
-    if (user.role === 'admin') {
+    if (user.role === 'admin' || user.role === 'superadmin') {
       return res.status(403).json({ error: 'Admin users cannot be deleted' });
     }
     await userService.remove(req.params.id);

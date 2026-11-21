@@ -1,11 +1,12 @@
 const express = require('express');
-const { getAll, getById, create, createBooking, getByUserId, updateStatus, verifyPayment, updateBookingStatus, uploadScreenshot, getStats } = require('../controllers/orderController');
+const { getAll, getById, create, quoteDelivery, createBooking, getByUserId, updateStatus, verifyPayment, updateBookingStatus, uploadScreenshot, getStats } = require('../controllers/orderController');
 const { authenticate } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 
 const router = express.Router();
 
 router.post('/', authenticate, create);
+router.post('/quote', authenticate, quoteDelivery);
 router.post('/book', authenticate, createBooking);
 router.post('/upload-payment', authenticate, upload.single('screenshot'), uploadScreenshot);
 router.get('/', authenticate, getAll);

@@ -11,16 +11,17 @@ async function main() {
   await prisma.category.deleteMany();
   await prisma.testimonial.deleteMany();
   await prisma.gallery.deleteMany();
+  await prisma.heroSlide.deleteMany();
   await prisma.settings.deleteMany();
   await prisma.user.deleteMany();
 
   const hashedPassword = await bcrypt.hash('admin123', 10);
   await prisma.user.create({
     data: {
-      name: 'Admin',
+      name: 'Super Admin',
       email: 'admin@anilvastralaya.com',
       password: hashedPassword,
-      role: 'admin',
+      role: 'superadmin',
     },
   });
 
@@ -98,6 +99,16 @@ async function main() {
     await prisma.gallery.create({ data: item });
   }
 
+  const heroSlides = [
+    { image: '/images/hero1.png', tagline: 'New Season 2024', title: 'Timeless\nElegance', ctaText: 'Shop Now', ctaLink: '/shop', position: 0, status: 'active' },
+    { image: '/images/hero2.png', tagline: 'Ethnic Collection', title: 'Grace\nRedefined', ctaText: 'Shop Now', ctaLink: '/shop', position: 1, status: 'active' },
+    { image: '/images/hero3.png', tagline: 'Premium Selection', title: 'Pure\nSophistication', ctaText: 'Shop Now', ctaLink: '/shop', position: 2, status: 'active' },
+  ];
+
+  for (const slide of heroSlides) {
+    await prisma.heroSlide.create({ data: slide });
+  }
+
   const defaultSettings = {
     storeName: 'Anil Vastralaya',
     storeTagline: 'Premium Traditional Wear Since 1985',
@@ -112,6 +123,16 @@ async function main() {
     enableTax: true,
     shippingCharges: 99,
     freeShippingThreshold: 999,
+    storeLatitude: '28.6562',
+    storeLongitude: '77.2309',
+    deliveryRadiusKm: 10,
+    deliveryCharge: 49,
+    deliverySlabs: [
+      { upTo: 999, charge: 49 },
+      { upTo: 2999, charge: 79 },
+      { upTo: null, charge: 99 },
+    ],
+    serviceablePincodes: '110006',
     deliveryTime: '3-5 business days',
     returnPolicy: '7 days return policy',
     exchangePolicy: '15 days exchange policy',
